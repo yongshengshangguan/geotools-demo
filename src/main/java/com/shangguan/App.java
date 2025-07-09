@@ -1,4 +1,4 @@
-package org.example;
+package com.shangguan;
 
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
