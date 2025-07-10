@@ -21,7 +21,7 @@ public class App {
             TifToPngConverter.convertSingleFile(localTif, outputPng);
 
             // 转换完成后删除临时文件（如果你想）
-            // new File(localTif).delete();
+             new File(localTif).delete();
 
         } catch (Exception e) {
             e.printStackTrace();
