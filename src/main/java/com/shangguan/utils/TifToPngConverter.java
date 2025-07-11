@@ -30,50 +30,58 @@ public class TifToPngConverter {
 
         int width = inDs.getRasterXSize();
         int height = inDs.getRasterYSize();
+        int bandCount = inDs.getRasterCount();
 
-        float[] floatBuffer = new float[width * height];
-        byte[] byteBuffer = new byte[width * height];
+        if (bandCount < 3) {
+            System.out.println("只有 " + bandCount + " 个波段，继续灰度模式");
+            // 回退灰度转换逻辑...
+            inDs.delete();
+            return;
+        }
 
-        inDs.GetRasterBand(1).ReadRaster(0, 0, width, height, floatBuffer);
-
-        // 计算归一化的最小最大值
+        // 读取 RGB 波段数据（前3个波段）
+        float[][] rgbFloat = new float[3][width * height];
+        byte[][] rgbByte = new byte[3][width * height];
         float min = Float.MAX_VALUE, max = -Float.MAX_VALUE;
-        for (float v : floatBuffer) {
-            if (!Float.isNaN(v)) {
-                if (v < min) min = v;
-                if (v > max) max = v;
+
+        for (int b = 0; b < 3; b++) {
+            inDs.GetRasterBand(b + 1).ReadRaster(0, 0, width, height, rgbFloat[b]);
+            for (float v : rgbFloat[b]) {
+                if (!Float.isNaN(v)) {
+                    if (v < min) min = v;
+                    if (v > max) max = v;
+                }
             }
         }
+
         float range = (max - min == 0) ? 1 : (max - min);
 
-        for (int i = 0; i < floatBuffer.length; i++) {
-            float val = floatBuffer[i];
-            if (Float.isNaN(val)) val = min;
-            byteBuffer[i] = (byte) Math.max(0, Math.min(255, ((val - min) / range) * 255));
+        for (int b = 0; b < 3; b++) {
+            for (int i = 0; i < rgbFloat[b].length; i++) {
+                float val = rgbFloat[b][i];
+                if (Float.isNaN(val)) val = min;
+                rgbByte[b][i] = (byte) Math.max(0, Math.min(255, ((val - min) / range) * 255));
+            }
         }
 
         Driver memDriver = gdal.GetDriverByName("MEM");
         Driver pngDriver = gdal.GetDriverByName("PNG");
 
-        if (memDriver == null || pngDriver == null) {
-            System.err.println("缺少 MEM 或 PNG 驱动！");
-            inDs.delete();
-            return;
+        Dataset memDs = memDriver.Create("", width, height, 3, gdalconst.GDT_Byte);
+        for (int b = 0; b < 3; b++) {
+            memDs.GetRasterBand(b + 1).WriteRaster(0, 0, width, height, rgbByte[b]);
         }
 
-        Dataset memDs = memDriver.Create("", width, height, 1, gdalconst.GDT_Byte);
-        memDs.GetRasterBand(1).WriteRaster(0, 0, width, height, byteBuffer);
-
         Dataset outDs = pngDriver.CreateCopy(outputPath, memDs);
-        if (outDs == null) {
-            System.err.println("PNG 输出失败：" + outputPath);
+        if (outDs != null) {
+            System.out.println("彩色转换成功：" + outputPath);
+            outDs.delete();
         } else {
-            System.out.println("转换成功：" + outputPath);
+            System.err.println("PNG 转换失败");
         }
 
         inDs.delete();
         memDs.delete();
-        if (outDs != null) outDs.delete();
     }
 
     /**
