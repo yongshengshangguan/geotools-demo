@@ -17,7 +17,7 @@ public class App {
 
         try {
             String tifUrl = "https://uav-static.nxzhnyyjy.com:9082/uav-static/map/202507040000003/index_map_color/GNDVI_local.tif";  // 替换成真实 URL
-//            String localTif = TifToPngConverter.downloadTif(tifUrl);
+            String localTif = TifToPngConverter.downloadTif(tifUrl);
 
             String outputPng = "D:\\QgisData\\png\\GNDVI_local1.png"; // 输出路径
             String outputPngyasuo = "D:\\QgisData\\png\\GNDVI_local2_yasuo.png"; // 输出路径2
@@ -25,7 +25,7 @@ public class App {
 //            TifToPngConverter.convertSingleFile(localTif, outputPng);
 
             // 输出 PNG（尽量压缩，无损）
-//            GeoToolsImageCompressor.compressTifToImage(localTif, outputPng, "png", 1.0f);
+            GeoToolsImageCompressor.compressTifToImage(localTif, outputPng, "png", 1.0f);
 
 
             File input = new File(outputPng);
